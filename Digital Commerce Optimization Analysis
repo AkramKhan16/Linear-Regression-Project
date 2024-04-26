@@ -1,0 +1,126 @@
+//Import libraries and get the data 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sb
+%matplotlib inline
+customers=pd.read_csv('Ecommerce Customers')
+customers.head()
+customers.info()  
+customers.describe() 
+
+//Exploratory Data Analysis
+customers.corr()  
+sb.jointplot(x='Time on Website',y='Yearly Amount Spent',data=customers)    
+sb.jointplot(x='Time on App',y='Yearly Amount Spent',data=customers)           
+sb.jointplot(x='Time on App',y='Length of Membership',data=customers,kind='hex')     
+sb.pairplot(customers)    
+customers.corr()    
+sb.lmplot(x='Yearly Amount Spent',y='Length of Membership',data=customers)  
+
+//Training and Testing Data
+x=customers.select_dtypes(exclude='object').drop('Yearly Amount Spent',axis=1)
+y=customers['Yearly Amount Spent']   
+from sklearn.model_selection import train_test_split    
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.3,random_state=101)        
+y_test.head()   
+
+//Training the Model
+from sklearn.linear_model import LinearRegression     
+lm=LinearRegression()        
+lm.fit(x_train,y_train)                
+print('Coefficients: \n',lm.coef_) 
+
+//Predicting Test Data
+predictions=lm.predict(x_test)         
+plt.scatter(y_test,predictions)
+plt.xlabel('y Test')
+plt.ylabel('predicted y') 
+
+//Evaluating the Model
+from sklearn import metrics
+print('MAE:',metrics.mean_absolute_error(y_test, predictions))
+print('MSE:',metrics.mean_squared_error(y_test, predictions))
+print('RMSE:',np.sqrt(metrics.mean_squared_error(y_test, predictions)))  
+
+//Residuals
+sb.distplot((y_test-predictions),bins=50)  
+
+//Conclusion
+coeffecients=pd.DataFrame(lm.coef_,x.columns)
+coeffecients.columns=['Coeffecient']
+coeffecients
+
+//GUI Representation
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+customers = pd.read_csv('Ecommerce Customers')
+class CustomerAnalysisGUI:
+    def __init__(self, master):
+        self.master = master
+        master.title("Customer Analysis")
+
+        self.main_frame = ttk.Frame(master)
+        self.main_frame.pack(padx=20, pady=20)
+        self.explore_data_button = ttk.Button(self.main_frame, text="Explore Data", command=self.explore_data)
+        self.explore_data_button.grid(row=0, column=0, padx=10, pady=10)
+
+        self.visualize_data_button = ttk.Button(self.main_frame, text="Visualize Data", command=self.visualize_data)
+        self.visualize_data_button.grid(row=0, column=1, padx=10, pady=10)
+
+        self.run_regression_button = ttk.Button(self.main_frame, text="Run Regression", command=self.run_regression)
+        self.run_regression_button.grid(row=0, column=2, padx=10, pady=10)
+
+        self.result_frame = ttk.Frame(self.main_frame)
+        self.result_frame.grid(row=1, column=0, columnspan=3, padx=10, pady=10)
+
+        self.result_text = tk.Text(self.result_frame, height=20, width=80)
+        self.result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.scrollbar = ttk.Scrollbar(self.result_frame, command=self.result_text.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.BOTH)
+        self.result_text.config(yscrollcommand=self.scrollbar.set)
+
+    def explore_data(self):
+        self.result_text.delete("1.0", tk.END)
+        self.result_text.insert(tk.END, customers.head())
+        self.result_text.insert(tk.END, "\n\n")
+        self.result_text.insert(tk.END, customers.info())
+
+    def visualize_data(self):
+        self.result_text.delete("1.0", tk.END)
+        sns.jointplot(x='Time on Website', y='Yearly Amount Spent', data=customers)
+        plt.savefig('time_on_website_vs_yearly_amount.png')
+        self.result_text.insert(tk.END, "Saved 'time_on_website_vs_yearly_amount.png'")
+
+    def run_regression(self):
+        self.result_text.delete("1.0", tk.END)
+
+        x = customers.select_dtypes(exclude='object').drop('Yearly Amount Spent', axis=1)
+        y = customers['Yearly Amount Spent']
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=101)
+
+        lm = LinearRegression()
+        lm.fit(x_train, y_train)
+        predictions = lm.predict(x_test)
+
+        self.result_text.insert(tk.END, f"Coefficients: {lm.coef_}\n\n")
+        self.result_text.insert(tk.END, f"MAE: {metrics.mean_absolute_error(y_test, predictions)}\n")
+        self.result_text.insert(tk.END, f"MSE: {metrics.mean_squared_error(y_test, predictions)}\n")
+        self.result_text.insert(tk.END, f"RMSE: {np.sqrt(metrics.mean_squared_error(y_test, predictions))}\n")
+
+        coefficients = pd.DataFrame(lm.coef_, x.columns)
+        coefficients.columns = ['Coefficient']
+        self.result_text.insert(tk.END, "\nCoefficients:\n")
+        self.result_text.insert(tk.END, str(coefficients))
+
+root = tk.Tk()
+app = CustomerAnalysisGUI(root)
+root.mainloop()
